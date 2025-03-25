@@ -18,7 +18,6 @@ def okta_source(
     config: RESTAPIConfig = {
         'client': {
             'base_url': f'{okta_org_url}/api/v1',
-            # we add an auth config if the auth token is present
             'auth': (
                 {   
                     'type': 'api_key',
@@ -28,41 +27,67 @@ def okta_source(
                 else None
             ),
         },
-        # The default configuration for all resources and their endpoints
         'resource_defaults': {
-            'primary_key': 'id', # id for state, uuid for logs
+            'primary_key': 'id', # id for state
             'write_disposition': 'replace',
         },
         'resources': [
-            # This is a simple resource definition,
-            # that uses the endpoint path as a resource name:
-            # 'pulls',
-            # Alternatively, you can define the endpoint as a dictionary
-            # {
-            #     'name': 'pulls', # <- Name of the resource
-            #     'endpoint': 'pulls',  # <- This is the endpoint path
-            # }
-            # Or use a more detailed configuration:
             {
                 'name': 'users',
                 'endpoint': {
-                    'path': 'users',
-                    'params': {
-                        'limit': '1'
-                    },
+                    'path': 'users'
                 },
             },
-            # The following is an example of a resource that uses
-            # a parent resource (`issues`) to get the `issue_number`
-            # and include it in the endpoint path:
             {
                 'name': 'user',
                 'endpoint': {
-                    # The placeholder `{resources.issues.number}`
-                    # will be replaced with the value of `number` field
-                    # in the `issues` resource data
                     'path': 'users/{resources.users.id}',
                 },
+            },
+            {
+                'name': 'groups',
+                'endpoint': {
+                    'path': 'groups'
+                }
+            },
+            {
+                'name': 'group',
+                'endpoint': {
+                    'path': '/groups/{resources.groups.id}'
+                }
+            },
+            {
+                'name': 'group_members',
+                'endpoint': {
+                    'path': '/groups/{resources.groups.id}/users'
+                },
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'group_apps',
+                'endpoint': '/groups/{resources.groups.id}/apps',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'group_owners',
+                'endpoint': {
+                    'path': '/groups/{resources.groups.id}/owners',
+                    'response_actions': [
+                        {'status_code': 401, 'action': 'ignore'},
+                    ],
+                },
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'apps',
+                'endpoint': {
+                    'path': 'apps'
+                }
+            },
+            {
+                'name': 'app',
+                'endpoint': '/apps/{resources.apps.id}',
+                'include_from_parent': ['id'],
             },
         ],
     }
