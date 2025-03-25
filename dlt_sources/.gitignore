@@ -8,5 +8,3 @@ secrets.toml
 # ignore duckdb
 *.duckdb
 *.wal
-
-**/data/*
