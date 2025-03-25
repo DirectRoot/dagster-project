@@ -28,7 +28,7 @@ def okta_source(
             ),
         },
         'resource_defaults': {
-            'primary_key': 'id', # id for state
+            #'primary_key': 'id',
             'write_disposition': 'replace',
         },
         'resources': [
@@ -41,13 +41,13 @@ def okta_source(
             {
                 'name': 'user',
                 'endpoint': {
-                    'path': 'users/{resources.users.id}',
+                    'path': '/users/{resources.users.id}',
                 },
             },
             {
                 'name': 'groups',
                 'endpoint': {
-                    'path': 'groups'
+                    'path': '/groups'
                 }
             },
             {
@@ -81,7 +81,7 @@ def okta_source(
             {
                 'name': 'apps',
                 'endpoint': {
-                    'path': 'apps'
+                    'path': '/apps'
                 }
             },
             {
@@ -89,6 +89,34 @@ def okta_source(
                 'endpoint': '/apps/{resources.apps.id}',
                 'include_from_parent': ['id'],
             },
+            {
+                'name': 'app_users',
+                'endpoint': '/apps/{resources.apps.id}/users',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'devices',
+                'endpoint': '/devices',
+            },
+            {
+                'name': 'device',
+                'endpoint': '/devices/{resources.devices.id}',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'device_users',
+                'endpoint': '/devices/{resources.devices.id}/users',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'policy_sign_on',
+                'endpoint': {
+                    'path': '/policies',
+                    'params': {
+                        'type': 'OKTA_SIGN_ON'
+                    }
+                }
+            }
         ],
     }
 
