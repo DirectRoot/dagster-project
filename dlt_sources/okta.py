@@ -31,7 +31,7 @@ def okta_source(
         # The default configuration for all resources and their endpoints
         'resource_defaults': {
             'primary_key': 'id', # id for state, uuid for logs
-            'write_disposition': 'merge', # works for Okta state, append for logs
+            'write_disposition': 'replace',
         },
         'resources': [
             # This is a simple resource definition,
