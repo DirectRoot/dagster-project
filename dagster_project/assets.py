@@ -3,16 +3,16 @@ from dagster import AssetExecutionContext
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt import pipeline
 
-from dlt_sources.okta import okta_source
+from dlt_sources.okta import okta_users
 
 @dlt_assets(
-    dlt_source=okta_source(),
+    dlt_source=okta_users(),
     dlt_pipeline=pipeline(
-        pipeline_name='rest_api_okta',
+        pipeline_name='okta_users',
         destination='filesystem',
-        dataset_name='rest_api_data'
+        dataset_name='okta_users'
     ),
-    name='okta',
+    name='okta_users',
     group_name='okta'
 )
 def dagster_okta_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
