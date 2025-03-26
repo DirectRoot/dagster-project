@@ -6,6 +6,14 @@ from dlt.sources.rest_api import (
     rest_api_resources,
 )
 
+def _client_config(okta_api_token, okta_org_url):
+    return {
+            'base_url': f'{okta_org_url}/api/v1',
+            'auth': {   
+                    'type': 'api_key',
+                    'api_key': f'SSWS {okta_api_token}',
+                }
+            }
 
 @dlt.source(name='okta_users')
 def okta_users(
@@ -13,17 +21,7 @@ def okta_users(
     okta_org_url: Optional[str] = dlt.config.value
     ) -> Any:
     config: RESTAPIConfig = {
-        'client': {
-            'base_url': f'{okta_org_url}/api/v1',
-            'auth': (
-                {   
-                    'type': 'api_key',
-                    'api_key': f'SSWS {okta_api_token}',
-                }
-                if okta_api_token
-                else None
-            ),
-        },
+        'client': _client_config(okta_api_token, okta_org_url),
         'resource_defaults': {
             #'primary_key': 'id',
             'write_disposition': 'replace',
