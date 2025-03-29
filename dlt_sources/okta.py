@@ -129,6 +129,7 @@ def okta_apps(
 
     yield from rest_api_resources(config)
 
+# TODO: OIE only
 @dlt.source(name='okta_devices')
 def okta_devices(
     okta_api_token: Optional[str] = dlt.secrets.value,
@@ -159,12 +160,52 @@ def okta_devices(
 
     yield from rest_api_resources(config)
 
-#            {
-#                'name': 'policy_sign_on',
-#                'endpoint': {
-#                    'path': '/policies',
-#                    'params': {
-#                        'type': 'OKTA_SIGN_ON'
-#                    }
-#                }
-#            }
+
+# TODO: The following policy types are available only with the Okta Identity Engine - ACCESS_POLICY, PROFILE_ENROLLMENT, POST_AUTH_SESSION, and ENTITY_RISK.
+
+@dlt.source(name='okta_access_policies')
+def okta_access_policies(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'policies_sign_on',
+                'endpoint': {
+                    'path': '/policies',
+                    'params': {
+                        'type': 'OKTA_SIGN_ON'
+                    }
+                }
+            },
+            {
+                'name': 'policy_sign_on',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_sign_on.id}',
+                }
+            },
+            {
+                'name': 'policy_sign_on_mappings',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_sign_on.id}/mappings',
+                    'response_actions': [
+                        {'status_code': 404, 'action': 'ignore'},
+                    ],
+                }
+            },
+            {
+                'name': 'policy_sign_on_rules',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_sign_on.id}/rules',
+                }
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
+
