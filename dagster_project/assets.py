@@ -11,6 +11,7 @@ from dlt_sources.okta import (
     okta_password_policies,
     okta_mfa_enrollment_policies,
     okta_profile_enrollment_policies,
+    okta_access_policies,
     okta_users,
 )
 
@@ -117,6 +118,20 @@ def okta_mfa_enrollment_policy_assets(context: AssetExecutionContext, dlt: Dagst
 )
 def okta_profile_enrollment_policy_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
     yield from dlt.run(context=context)
+
+@dlt_assets(
+    dlt_source=okta_access_policies(),
+    dlt_pipeline=pipeline(
+        pipeline_name='okta_access_policies',
+        destination='filesystem',
+        dataset_name='okta_access_policies'
+    ),
+    name='okta_access_policies',
+    group_name='okta'
+)
+def okta_access_policy_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
+    yield from dlt.run(context=context)
+
 
 defs = dg.Definitions(
     assets=[

@@ -346,3 +346,49 @@ def okta_profile_enrollment_policies(
     }
 
     yield from rest_api_resources(config)
+
+@dlt.source(name='okta_access_policies')
+def okta_access_policies(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'policies_access',
+                'endpoint': {
+                    'path': '/policies',
+                    'params': {
+                        'type': 'ACCESS_POLICY'
+                    }
+                }
+            },
+            {
+                'name': 'policy_access',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_access.id}',
+                }
+            },
+            {
+                'name': 'policy_access_mappings',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_access.id}/mappings',
+                    'response_actions': [
+                        {'status_code': 404, 'action': 'ignore'},
+                    ],
+                }
+            },
+            {
+                'name': 'policy_access_rules',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_access.id}/rules',
+                }
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
