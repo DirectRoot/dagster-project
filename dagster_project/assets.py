@@ -5,6 +5,7 @@ from dlt import pipeline
 
 from dlt_sources.okta import (
     okta_apps,
+    okta_devices,
     okta_groups,
     okta_users,
 )
@@ -48,11 +49,25 @@ def okta_group_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
 def okta_app_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
     yield from dlt.run(context=context)
 
+@dlt_assets(
+    dlt_source=okta_devices(),
+    dlt_pipeline=pipeline(
+        pipeline_name='okta_devices',
+        destination='filesystem',
+        dataset_name='okta_devices'
+    ),
+    name='okta_devices',
+    group_name='okta'
+)
+def okta_device_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
+    yield from dlt.run(context=context)
+
 defs = dg.Definitions(
     assets=[
         okta_user_assets,
         okta_group_assets,
-        okta_app_assets
+        okta_app_assets,
+        okta_device_assets
     ],
     resources={
         "dlt": DagsterDltResource(),

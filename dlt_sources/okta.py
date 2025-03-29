@@ -128,21 +128,37 @@ def okta_apps(
     }
 
     yield from rest_api_resources(config)
-            
-#            {
-#                'name': 'devices',
-#                'endpoint': '/devices',
-#            },
-#            {
-#                'name': 'device',
-#                'endpoint': '/devices/{resources.devices.id}',
-#                'include_from_parent': ['id'],
-#            },
-#            {
-#                'name': 'device_users',
-#                'endpoint': '/devices/{resources.devices.id}/users',
-#                'include_from_parent': ['id'],
-#            },
+
+@dlt.source(name='okta_devices')
+def okta_devices(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'devices',
+                'endpoint': '/devices',
+            },
+            {
+                'name': 'device',
+                'endpoint': '/devices/{resources.devices.id}',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'device_users',
+                'endpoint': '/devices/{resources.devices.id}/users',
+                'include_from_parent': ['id'],
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
+
 #            {
 #                'name': 'policy_sign_on',
 #                'endpoint': {
