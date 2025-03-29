@@ -163,8 +163,8 @@ def okta_devices(
 
 # TODO: The following policy types are available only with the Okta Identity Engine - ACCESS_POLICY, PROFILE_ENROLLMENT, POST_AUTH_SESSION, and ENTITY_RISK.
 
-@dlt.source(name='okta_access_policies')
-def okta_access_policies(
+@dlt.source(name='okta_sign_on_policies')
+def okta_sign_on_policies(
     okta_api_token: Optional[str] = dlt.secrets.value,
     okta_org_url: Optional[str] = dlt.config.value
     ) -> Any:
