@@ -209,3 +209,49 @@ def okta_access_policies(
 
     yield from rest_api_resources(config)
 
+@dlt.source(name='okta_password_policies')
+def okta_password_policies(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'policies_password',
+                'endpoint': {
+                    'path': '/policies',
+                    'params': {
+                        'type': 'PASSWORD'
+                    }
+                }
+            },
+            {
+                'name': 'policy_password',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_password.id}',
+                }
+            },
+            {
+                'name': 'policy_password_mappings',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_password.id}/mappings',
+                    'response_actions': [
+                        {'status_code': 404, 'action': 'ignore'},
+                    ],
+                }
+            },
+            {
+                'name': 'policy_password_rules',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_password.id}/rules',
+                }
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
+
