@@ -255,3 +255,48 @@ def okta_password_policies(
 
     yield from rest_api_resources(config)
 
+@dlt.source(name='okta_mfa_enrollment_policies')
+def okta_mfa_enrollment_policies(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'policies_mfa_enrollment',
+                'endpoint': {
+                    'path': '/policies',
+                    'params': {
+                        'type': 'MFA_ENROLL'
+                    }
+                }
+            },
+            {
+                'name': 'policy_mfa_enrollment',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_mfa_enrollment.id}',
+                }
+            },
+            {
+                'name': 'policy_mfa_enrollment_mappings',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_mfa_enrollment.id}/mappings',
+                    'response_actions': [
+                        {'status_code': 404, 'action': 'ignore'},
+                    ],
+                }
+            },
+            {
+                'name': 'policy_mfa_enrollment_rules',
+                'endpoint': {
+                    'path': '/policies/{resources.policies_mfa_enrollment.id}/rules',
+                }
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
