@@ -23,7 +23,7 @@ def okta_users(
     config: RESTAPIConfig = {
         'client': _client_config(okta_api_token, okta_org_url),
         'resource_defaults': {
-            #'primary_key': 'id',
+            'primary_key': 'id',
             'write_disposition': 'replace',
         },
         'resources': [
@@ -53,7 +53,7 @@ def okta_groups(
     config: RESTAPIConfig = {
         'client': _client_config(okta_api_token, okta_org_url),
         'resource_defaults': {
-            #'primary_key': 'id',
+            'primary_key': 'id',
             'write_disposition': 'replace',
         },
         'resources': [
@@ -69,50 +69,66 @@ def okta_groups(
                     'path': '/groups/{resources.groups.id}'
                 }
             },
+            {
+                'name': 'group_members',
+                'endpoint': {
+                    'path': '/groups/{resources.groups.id}/users'
+                },
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'group_apps',
+                'endpoint': '/groups/{resources.groups.id}/apps',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'group_owners',
+                'endpoint': {
+                    'path': '/groups/{resources.groups.id}/owners',
+                    'response_actions': [
+                        {'status_code': 401, 'action': 'ignore'},
+                    ],
+                },
+                'include_from_parent': ['id'],
+            },
         ],
     }
 
     yield from rest_api_resources(config)
 
+@dlt.source(name='okta_apps')
+def okta_apps(
+    okta_api_token: Optional[str] = dlt.secrets.value,
+    okta_org_url: Optional[str] = dlt.config.value
+    ) -> Any:
+    config: RESTAPIConfig = {
+        'client': _client_config(okta_api_token, okta_org_url),
+        'resource_defaults': {
+            'primary_key': 'id',
+            'write_disposition': 'replace',
+        },
+        'resources': [
+            {
+                'name': 'apps',
+                'endpoint': {
+                    'path': '/apps'
+                }
+            },
+            {
+                'name': 'app',
+                'endpoint': '/apps/{resources.apps.id}',
+                'include_from_parent': ['id'],
+            },
+            {
+                'name': 'app_users',
+                'endpoint': '/apps/{resources.apps.id}/users',
+                'include_from_parent': ['id'],
+            },
+        ],
+    }
+
+    yield from rest_api_resources(config)
             
-#            {
-#                'name': 'group_members',
-#                'endpoint': {
-#                    'path': '/groups/{resources.groups.id}/users'
-#                },
-#                'include_from_parent': ['id'],
-#            },
-#            {
-#                'name': 'group_apps',
-#                'endpoint': '/groups/{resources.groups.id}/apps',
-#                'include_from_parent': ['id'],
-#            },
-#            {
-#                'name': 'group_owners',
-#                'endpoint': {
-#                    'path': '/groups/{resources.groups.id}/owners',
-#                    'response_actions': [
-#                        {'status_code': 401, 'action': 'ignore'},
-#                    ],
-#                },
-#                'include_from_parent': ['id'],
-#            },
-#            {
-#                'name': 'apps',
-#                'endpoint': {
-#                    'path': '/apps'
-#                }
-#            },
-#            {
-#                'name': 'app',
-#                'endpoint': '/apps/{resources.apps.id}',
-#                'include_from_parent': ['id'],
-#            },
-#            {
-#                'name': 'app_users',
-#                'endpoint': '/apps/{resources.apps.id}/users',
-#                'include_from_parent': ['id'],
-#            },
 #            {
 #                'name': 'devices',
 #                'endpoint': '/devices',
