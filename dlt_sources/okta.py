@@ -6,6 +6,21 @@ from dlt.sources.rest_api import (
     rest_api_resources,
 )
 
+CLIENTS_DB = {
+    'dev-44559887' : {
+        'name': 'dev-44559887',
+        'pipeline_prefix': 'dev_44559887',
+        'org_url': 'https://dev-44559887.okta.com',
+        'api_token': '00C7g1V8AtbUNeLpnpVPEkhKuAXqbgHSZ6B9KmndFO'
+        },
+    #'dev-14449001' : {
+    #    'name': 'dev-14449001',
+    #    'pipeline_prefix': 'dev-14449001',
+    #    'org_url': 'https://dev-14449001.okta.com',
+    #    'api_token': '00pGgPKFqvwjLNuBYt5i5QatmmKaE3Onf11lmEp1m-'
+    #    }
+}
+
 def _client_config(okta_api_token, okta_org_url):
     return {
             'base_url': f'{okta_org_url}/api/v1',
@@ -16,10 +31,7 @@ def _client_config(okta_api_token, okta_org_url):
             }
 
 @dlt.source(name='okta_users')
-def okta_users(
-    okta_api_token: Optional[str] = dlt.secrets.value,
-    okta_org_url: Optional[str] = dlt.config.value
-    ) -> Any:
+def okta_users(okta_api_token, okta_org_url) -> Any:
     config: RESTAPIConfig = {
         'client': _client_config(okta_api_token, okta_org_url),
         'resource_defaults': {
