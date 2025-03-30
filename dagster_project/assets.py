@@ -22,6 +22,9 @@ from dlt_sources.okta import (
     #okta_users,
 )
 from models.client import Client
+from models.dlt_rest_config import OktaUsers
+
+dlt.config['normalize.data_writer.disable_compression'] = True # TODO: Only in local mode
 
 CLIENTS_DB = [
     Client({
@@ -38,59 +41,36 @@ CLIENTS_DB = [
         })
 ]
 
+DLT_SOURCES = [
+    OktaUsers,
+]
+
 def assets_factory(clients_db: List[Client]):
     assets = []
     for client in clients_db:
-        environ[f'{client.id}_OKTA_USERS__BUCKET_URL'] = f'./data/{client.id}'
+        for source in DLT_SOURCES:
+            environ[f'{client.id}_{source.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
 
 
-        @dlt.source(name=f'{client.id}_okta_users')
-        def okta_users(okta_api_token, okta_org_url):
-            config: RESTAPIConfig = {
-                'client': {
-                    'base_url': f'{okta_org_url}/api/v1',
-                    'auth': {   
-                            'type': 'api_key',
-                            'api_key': f'SSWS {okta_api_token}',
-                        }
-                    },
-                'resource_defaults': {
-                    'primary_key': 'id',
-                    'write_disposition': 'replace',
-                },
-                'resources': [
-                    {
-                        'name': 'users',
-                        'endpoint': {
-                            'path': 'users'
-                        },
-                    },
-                    {
-                        'name': 'user',
-                        'endpoint': {
-                            'path': '/users/{resources.users.id}',
-                        },
-                    },
-                ],
-            }
-
-            yield from rest_api_resources(config)
+            @dlt.source(name=f'{client.id}_{source.name}')
+            def source_func():
+                yield from rest_api_resources(OktaUsers(client.org_url, client.api_token).config)
 
 
-        @dlt_assets(
-            dlt_source=okta_users(client.api_token, client.org_url),
-            dlt_pipeline=dlt.pipeline(
-                pipeline_name=f'{client.id}_okta_users',
-                destination='filesystem',
-                dataset_name=f'okta_users'
-            ),
-            name=f'{client.id}_okta_users',
-            group_name=f'{client.dagster_safe_prefix}_okta'
-        )
-        def okta_user_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
-            yield from dlt.run(context=context)
-        
-        assets.append(okta_user_assets)
+            @dlt_assets(
+                dlt_source=source_func(),
+                dlt_pipeline=dlt.pipeline(
+                    pipeline_name=f'{client.id}_{source.name}',
+                    destination='filesystem',
+                    dataset_name=source.name
+                ),
+                name=f'{client.id}_{source.name}',
+                group_name=f'{client.dagster_safe_prefix}_okta'
+            )
+            def okta_user_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
+                yield from dlt.run(context=context)
+
+            assets.append(okta_user_assets)
 
     return assets
 
