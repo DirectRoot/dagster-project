@@ -1,4 +1,4 @@
-# Clients as in customers, not clients as in HTTP client
+# Client as in customer, not client as in API client
 
 class Client():
 
