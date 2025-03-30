@@ -48,24 +48,19 @@ DLT_SOURCES = [
 def assets_factory(clients_db: List[Client]):
     assets = []
     for client in clients_db:
-        for source in DLT_SOURCES:
-            environ[f'{client.id}_{source.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
+        for config_class in DLT_SOURCES:
+            environ[f'{client.id}_{config_class.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
 
 
-            @dlt.source(name=f'{client.id}_{source.name}')
+            @dlt.source(name=f'{client.id}_{config_class.name}')
             def source_func():
-
-                def remove_links(data: Dict):
-                    if '_links' in data:
-                        del data['_links']
-    
-                    return data
-                
-                resources = rest_api_resources(OktaUsers(client.org_url, client.api_token).config)
-                for resource in resources:
-                    resource.add_map(
-                        lambda data: remove_links(data)
-                    )
+                config = config_class(client.org_url, client.api_token)
+                resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
+                for resource in resources: # add all the data maps for the given resource
+                    for map in config.data_maps:
+                        resource.add_map(
+                            lambda data: map(data)
+                        )
                 
                 yield from resources
 
@@ -73,11 +68,11 @@ def assets_factory(clients_db: List[Client]):
             @dlt_assets(
                 dlt_source=source_func(),
                 dlt_pipeline=dlt.pipeline(
-                    pipeline_name=f'{client.id}_{source.name}',
+                    pipeline_name=f'{client.id}_{config_class.name}',
                     destination='filesystem',
-                    dataset_name=source.name
+                    dataset_name=config_class.name
                 ),
-                name=f'{client.id}_{source.name}',
+                name=f'{client.id}_{config_class.name}',
                 group_name=f'{client.dagster_safe_prefix}_okta'
             )
             def okta_user_assets(context: AssetExecutionContext, dlt: DagsterDltResource):

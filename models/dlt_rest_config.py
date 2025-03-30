@@ -17,16 +17,31 @@ class DltRestConfig(ABC):
                 }
     
     @property
+    def _map_remove_links(self):
+        def remove_links(data):
+            if '_links' in data:
+                del data['_links']
+            return data
+        return remove_links
+
+    @property
+    def data_maps(self):
+        return [
+            self._map_remove_links
+        ]
+
+    @property
     @abstractmethod
-    def config(self):
+    def rest(self):
         pass
     
+
 class OktaUsers(DltRestConfig):
 
     name = 'okta_users'
 
     @property
-    def config(self):
+    def rest(self):
         return {
                 'client': self._client,
                 'resource_defaults': {
