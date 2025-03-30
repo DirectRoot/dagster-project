@@ -3,7 +3,11 @@ from os import environ
 import dagster as dg
 from dagster import AssetExecutionContext
 from dagster_dlt import DagsterDltResource, dlt_assets
-from dlt import pipeline
+import dlt
+from dlt.sources.rest_api import (
+    RESTAPIConfig,
+    rest_api_resources,
+)
 
 from dlt_sources.okta import (
     okta_apps,
@@ -14,7 +18,7 @@ from dlt_sources.okta import (
     okta_mfa_enrollment_policies,
     okta_profile_enrollment_policies,
     okta_access_policies,
-    okta_users,
+    #okta_users,
 )
 
 CLIENTS_DB = {
@@ -24,12 +28,12 @@ CLIENTS_DB = {
         'org_url': 'https://dev-44559887.okta.com',
         'api_token': '00C7g1V8AtbUNeLpnpVPEkhKuAXqbgHSZ6B9KmndFO'
         },
-    #'dev-14449001' : {
-    #    'name': 'dev-14449001',
-    #    'pipeline_prefix': 'dev_14449001',
-    #    'org_url': 'https://dev-14449001.okta.com',
-    #    'api_token': '00pGgPKFqvwjLNuBYt5i5QatmmKaE3Onf11lmEp1m-'
-    #    }
+    'dev-14449001' : {
+        'name': 'dev-14449001',
+        'pipeline_prefix': 'dev_14449001',
+        'org_url': 'https://dev-14449001.okta.com',
+        'api_token': '00pGgPKFqvwjLNuBYt5i5QatmmKaE3Onf11lmEp1m-'
+        }
 }
 
 def pipelines_factory(clients_db):
@@ -39,9 +43,43 @@ def pipelines_factory(clients_db):
 
         environ[f'{pipeline_prefix_upper}_OKTA_USERS__BUCKET_URL'] = f'./data/{config['name']}'
 
+
+        @dlt.source(name=f'{config["pipeline_prefix"]}_okta_users')
+        def okta_users(okta_api_token, okta_org_url):
+            config: RESTAPIConfig = {
+                'client': {
+                    'base_url': f'{okta_org_url}/api/v1',
+                    'auth': {   
+                            'type': 'api_key',
+                            'api_key': f'SSWS {okta_api_token}',
+                        }
+                    },
+                'resource_defaults': {
+                    'primary_key': 'id',
+                    'write_disposition': 'replace',
+                },
+                'resources': [
+                    {
+                        'name': 'users',
+                        'endpoint': {
+                            'path': 'users'
+                        },
+                    },
+                    {
+                        'name': 'user',
+                        'endpoint': {
+                            'path': '/users/{resources.users.id}',
+                        },
+                    },
+                ],
+            }
+
+            yield from rest_api_resources(config)
+
+
         @dlt_assets(
             dlt_source=okta_users(config['api_token'], config['org_url']),
-            dlt_pipeline=pipeline(
+            dlt_pipeline=dlt.pipeline(
                 pipeline_name=f'{config["pipeline_prefix"]}_okta_users',
                 destination='filesystem',
                 dataset_name=f'okta_users'
