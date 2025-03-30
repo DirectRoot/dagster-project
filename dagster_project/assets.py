@@ -1,3 +1,4 @@
+from typing import List
 from os import environ
 
 import dagster as dg
@@ -20,31 +21,30 @@ from dlt_sources.okta import (
     okta_access_policies,
     #okta_users,
 )
+from models.client import Client
 
-CLIENTS_DB = {
-    'dev-44559887' : {
+CLIENTS_DB = [
+    Client({
+        'id': 'A0000001',
         'name': 'dev-44559887',
-        'pipeline_prefix': 'dev_44559887',
         'org_url': 'https://dev-44559887.okta.com',
         'api_token': '00C7g1V8AtbUNeLpnpVPEkhKuAXqbgHSZ6B9KmndFO'
-        },
-    'dev-14449001' : {
+        }),
+    Client({
+        'id': 'A0000002',
         'name': 'dev-14449001',
-        'pipeline_prefix': 'dev_14449001',
         'org_url': 'https://dev-14449001.okta.com',
         'api_token': '00pGgPKFqvwjLNuBYt5i5QatmmKaE3Onf11lmEp1m-'
-        }
-}
+        })
+]
 
-def pipelines_factory(clients_db):
+def assets_factory(clients_db: List[Client]):
     assets = []
-    for client, config in clients_db.items():
-        pipeline_prefix_upper = config['pipeline_prefix'].upper() # uppercase for env var names
-
-        environ[f'{pipeline_prefix_upper}_OKTA_USERS__BUCKET_URL'] = f'./data/{config['name']}'
+    for client in clients_db:
+        environ[f'{client.id}_OKTA_USERS__BUCKET_URL'] = f'./data/{client.id}'
 
 
-        @dlt.source(name=f'{config["pipeline_prefix"]}_okta_users')
+        @dlt.source(name=f'{client.id}_okta_users')
         def okta_users(okta_api_token, okta_org_url):
             config: RESTAPIConfig = {
                 'client': {
@@ -78,14 +78,14 @@ def pipelines_factory(clients_db):
 
 
         @dlt_assets(
-            dlt_source=okta_users(config['api_token'], config['org_url']),
+            dlt_source=okta_users(client.api_token, client.org_url),
             dlt_pipeline=dlt.pipeline(
-                pipeline_name=f'{config["pipeline_prefix"]}_okta_users',
+                pipeline_name=f'{client.id}_okta_users',
                 destination='filesystem',
                 dataset_name=f'okta_users'
             ),
-            name=f'{config["pipeline_prefix"]}_okta_users',
-            group_name=f'{config["pipeline_prefix"]}_okta'
+            name=f'{client.id}_okta_users',
+            group_name=f'{client.dagster_safe_prefix}_okta'
         )
         def okta_user_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
             yield from dlt.run(context=context)
@@ -96,7 +96,7 @@ def pipelines_factory(clients_db):
 
 
 defs = dg.Definitions(
-    assets=pipelines_factory(CLIENTS_DB),
+    assets=assets_factory(CLIENTS_DB),
     resources={
         "dlt": DagsterDltResource(),
     },
