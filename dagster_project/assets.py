@@ -13,12 +13,28 @@ from dlt.sources.rest_api import (
 from models.client import Client
 from models.dlt_rest_config import (
     OktaUsers,
-    OktaGroups
+    OktaGroups,
+    OktaApps,
+    OktaAccessPolicies,
+    OktaDevices,
+    OktaMfaEnrollmentPolicies,
+    OktaPasswordPolicies,
+    OktaProfileEnrollmentPolicies,
+    OktaSignOnPolicies,
+    OktaLogEvents,
     )
 
 DLT_SOURCES = [
-    OktaUsers,
-    OktaGroups
+    #OktaUsers,
+    #OktaGroups,
+    #OktaApps,
+    #OktaAccessPolicies,
+    #OktaDevices,
+    #OktaMfaEnrollmentPolicies,
+    #OktaPasswordPolicies,
+    #OktaProfileEnrollmentPolicies,
+    #OktaSignOnPolicies,
+    OktaLogEvents,
 ]
 
 dlt.config['normalize.data_writer.disable_compression'] = True # TODO: Only in local mode
