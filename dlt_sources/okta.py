@@ -62,49 +62,7 @@ def okta_groups(
     okta_api_token: Optional[str] = dlt.secrets.value,
     okta_org_url: Optional[str] = dlt.config.value
     ) -> Any:
-    config: RESTAPIConfig = {
-        'client': _client_config(okta_api_token, okta_org_url),
-        'resource_defaults': {
-            'primary_key': 'id',
-            'write_disposition': 'replace',
-        },
-        'resources': [
-            {
-                'name': 'groups',
-                'endpoint': {
-                    'path': '/groups'
-                }
-            },
-            {
-                'name': 'group',
-                'endpoint': {
-                    'path': '/groups/{resources.groups.id}'
-                }
-            },
-            {
-                'name': 'group_members',
-                'endpoint': {
-                    'path': '/groups/{resources.groups.id}/users'
-                },
-                'include_from_parent': ['id'],
-            },
-            {
-                'name': 'group_apps',
-                'endpoint': '/groups/{resources.groups.id}/apps',
-                'include_from_parent': ['id'],
-            },
-            {
-                'name': 'group_owners',
-                'endpoint': {
-                    'path': '/groups/{resources.groups.id}/owners',
-                    'response_actions': [
-                        {'status_code': 401, 'action': 'ignore'},
-                    ],
-                },
-                'include_from_parent': ['id'],
-            },
-        ],
-    }
+    config: RESTAPIConfig =
 
     yield from rest_api_resources(config)
 

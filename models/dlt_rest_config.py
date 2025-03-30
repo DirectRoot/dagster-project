@@ -63,4 +63,54 @@ class OktaUsers(DltRestConfig):
                     },
                 ],
             }
-    
+
+
+class OktaGroups(DltRestConfig):
+
+    name = 'okta_groups'
+
+    @property
+    def rest(self):
+        return  {
+            'client': self._client,
+            'resource_defaults': {
+                'primary_key': 'id',
+                'write_disposition': 'replace',
+            },
+            'resources': [
+                {
+                    'name': 'groups',
+                    'endpoint': {
+                        'path': '/groups'
+                    }
+                },
+                {
+                    'name': 'group',
+                    'endpoint': {
+                        'path': '/groups/{resources.groups.id}'
+                    }
+                },
+                {
+                    'name': 'group_members',
+                    'endpoint': {
+                        'path': '/groups/{resources.groups.id}/users'
+                    },
+                    'include_from_parent': ['id'],
+                },
+                {
+                    'name': 'group_apps',
+                    'endpoint': '/groups/{resources.groups.id}/apps',
+                    'include_from_parent': ['id'],
+                },
+                {
+                    'name': 'group_owners',
+                    'endpoint': {
+                        'path': '/groups/{resources.groups.id}/owners',
+                        'response_actions': [
+                            {'status_code': 401, 'action': 'ignore'},
+                        ],
+                    },
+                    'include_from_parent': ['id'],
+                },
+            ],
+        }
