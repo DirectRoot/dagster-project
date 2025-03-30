@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 from os import environ
 
 import dagster as dg
@@ -54,7 +54,20 @@ def assets_factory(clients_db: List[Client]):
 
             @dlt.source(name=f'{client.id}_{source.name}')
             def source_func():
-                yield from rest_api_resources(OktaUsers(client.org_url, client.api_token).config)
+
+                def remove_links(data: Dict):
+                    if '_links' in data:
+                        del data['_links']
+    
+                    return data
+                
+                resources = rest_api_resources(OktaUsers(client.org_url, client.api_token).config)
+                for resource in resources:
+                    resource.add_map(
+                        lambda data: remove_links(data)
+                    )
+                
+                yield from resources
 
 
             @dlt_assets(
