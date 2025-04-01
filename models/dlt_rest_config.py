@@ -59,7 +59,9 @@ class OktaUsers(DltRestConfig):
                 'client': self._client,
                 'resource_defaults': {
                     'primary_key': 'id',
-                    'write_disposition': 'replace',
+                    'write_disposition': {
+                        'disposition': 'merge'
+                    }
                 },
                 'resources': [
                     {
@@ -68,15 +70,24 @@ class OktaUsers(DltRestConfig):
                             'path': 'users',
                             'incremental': self.state_incremental_params
                         },
-                    },
-                    {
-                        'name': 'user',
-                        'endpoint': {
-                            'path': '/users/{resources.users.id}',
-                        }
-                    },
+                    }
                 ],
             }
+
+    @property
+    def _map_remove_credentials(self):
+        def remove_credentials (data):
+            if 'credentials' in data:
+                del data['credentials']
+            return data
+        return remove_credentials
+
+    @property
+    def data_maps(self):
+        maps = super().data_maps
+        maps.append(self._map_remove_credentials)
+        return maps
+
 
 
 class OktaGroups(DltRestConfig):

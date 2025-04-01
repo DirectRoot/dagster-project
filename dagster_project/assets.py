@@ -72,7 +72,6 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
         @dlt.source(name=f'{client.id}_{config_class.name}')
         def source_func():
             config = config_class(client.org_url, client.api_token)
-            environ[f'{client.id}_{config.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
             resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
             resources = add_data_maps(resources, config)
 
@@ -82,7 +81,7 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
             dlt_source=source_func(),
             dlt_pipeline=dlt.pipeline(
                 pipeline_name=f'{client.id}_{config_class.name}',
-                destination='filesystem',
+                destination=dlt.destinations.postgres(f'postgresql://postgres:mysecretpassword@localhost:5433/{client.id}'),
                 dataset_name=config_class.name
             ),
             name=f'{client.id}_{config_class.name}',
