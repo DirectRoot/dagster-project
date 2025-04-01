@@ -25,7 +25,7 @@ from models.dlt_rest_config import (
     )
 
 DLT_SOURCES = [
-    #OktaUsers,
+    OktaUsers,
     #OktaGroups,
     #OktaApps,
     #OktaAccessPolicies,
@@ -64,37 +64,41 @@ def add_data_maps(resources, config):
 
 
 def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltResource):
-    
-    # Okta Users
-    @dlt.source(name=f'{client.id}_{OktaUsers.name}')
-    def okta_users_source():
-        config = OktaUsers(client.org_url, client.api_token)
-        environ[f'{client.id}_{config.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
-        resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
-        resources = add_data_maps(resources, config)
-        
-        yield from resources
+    assets_map = {}
 
-    @dlt_assets(
-        dlt_source=okta_users_source(),
-        dlt_pipeline=dlt.pipeline(
-            pipeline_name=f'{client.id}_{OktaUsers.name}',
-            destination='filesystem',
-            dataset_name=OktaUsers.name
-        ),
-        name=f'{client.id}_{OktaUsers.name}',
-        group_name=f'{client.dagster_safe_prefix}_okta'
-    )
-    def okta_user_assets(context: AssetExecutionContext, dlt: DagsterDltResource):
-        yield from dlt.run(context=context)
+    for config_class in DLT_SOURCES:
 
+        def source_func_factory():
+            @dlt.source(name=f'{client.id}_{config_class.name}')
+            def source_func():
+                config = config_class(client.org_url, client.api_token)
+                environ[f'{client.id}_{config.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
+                resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
+                resources = add_data_maps(resources, config)
 
+                yield from resources
+            return source_func
 
+        def assets_func_factory():
+            @dlt_assets(
+                dlt_source=source_func_factory()(),
+                dlt_pipeline=dlt.pipeline(
+                    pipeline_name=f'{client.id}_{config_class.name}',
+                    destination='filesystem',
+                    dataset_name=config_class.name
+                ),
+                name=f'{client.id}_{config_class.name}',
+                group_name=f'{client.dagster_safe_prefix}_okta'
+            )
+            def assets_func(context: AssetExecutionContext, dlt: DagsterDltResource):
+                yield from dlt.run(context=context)
+            
+            return assets_func
+
+        assets_map[config_class.name] = assets_func_factory()
 
     return dg.Definitions(
-            assets=[
-                okta_user_assets,
-            ],
+            assets=list(assets_map.values()),
             resources={
                 'dlt': dlt_resource
             }
