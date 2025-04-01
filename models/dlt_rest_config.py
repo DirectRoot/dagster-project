@@ -30,6 +30,19 @@ class DltRestConfig(ABC):
             self._map_remove_links
         ]
 
+    # TODO: Check this works & add it to sub classes
+    def _gt_filter_expression(self, timestamp):
+        return f'lastUpdated gt "{timestamp}"'
+
+    @property
+    def state_incremental_params(self):
+        return {
+            'start_param': 'filter',
+            'cursor_path': 'lastUpdated',
+            'initial_value': '1970-01-01T00:00:00.000Z',
+            'convert': lambda timestamp: self._gt_filter_expression(timestamp)
+            }
+
     @property
     @abstractmethod
     def rest(self):
@@ -52,14 +65,15 @@ class OktaUsers(DltRestConfig):
                     {
                         'name': 'users',
                         'endpoint': {
-                            'path': 'users'
+                            'path': 'users',
+                            'incremental': self.state_incremental_params
                         },
                     },
                     {
                         'name': 'user',
                         'endpoint': {
                             'path': '/users/{resources.users.id}',
-                        },
+                        }
                     },
                 ],
             }
