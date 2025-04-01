@@ -68,34 +68,30 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
 
     for config_class in DLT_SOURCES:
 
-        def source_func_factory():
-            @dlt.source(name=f'{client.id}_{config_class.name}')
-            def source_func():
-                config = config_class(client.org_url, client.api_token)
-                environ[f'{client.id}_{config.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
-                resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
-                resources = add_data_maps(resources, config)
+        @dlt.source(name=f'{client.id}_{config_class.name}')
+        def source_func():
+            config = config_class(client.org_url, client.api_token)
+            environ[f'{client.id}_{config.name.upper()}__BUCKET_URL'] = f'./data/{client.id}'
+            resources = rest_api_resources(config.rest) # returns a variable number of resources depending on REST config
+            resources = add_data_maps(resources, config)
 
-                yield from resources
-            return source_func
+            yield from resources
 
-        def assets_func_factory():
-            @dlt_assets(
-                dlt_source=source_func_factory()(),
-                dlt_pipeline=dlt.pipeline(
-                    pipeline_name=f'{client.id}_{config_class.name}',
-                    destination='filesystem',
-                    dataset_name=config_class.name
-                ),
-                name=f'{client.id}_{config_class.name}',
-                group_name=f'{client.dagster_safe_prefix}_okta'
-            )
-            def assets_func(context: AssetExecutionContext, dlt: DagsterDltResource):
-                yield from dlt.run(context=context)
-            
-            return assets_func
+        @dlt_assets(
+            dlt_source=source_func(),
+            dlt_pipeline=dlt.pipeline(
+                pipeline_name=f'{client.id}_{config_class.name}',
+                destination='filesystem',
+                dataset_name=config_class.name
+            ),
+            name=f'{client.id}_{config_class.name}',
+            group_name=f'{client.dagster_safe_prefix}_okta'
+        )
+        def assets_func(context: AssetExecutionContext, dlt: DagsterDltResource):
+            yield from dlt.run(context=context)
+        
 
-        assets_map[config_class.name] = assets_func_factory()
+        assets_map[config_class.name] = assets_func
 
     return dg.Definitions(
             assets=list(assets_map.values()),
