@@ -13,6 +13,7 @@ dependencies = [
     "duckdb (>=1.2.1,<2.0.0)",
     "sqlglot (>=26.11.1,<27.0.0)",
     "dagster-webserver (>=1.10.7,<2.0.0)",
+    "dlt[postgres] (>=1.9.0,<2.0.0)",
 ]
 
 [project.optional-dependencies]
