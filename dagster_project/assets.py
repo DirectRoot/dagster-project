@@ -66,6 +66,7 @@ def add_data_maps(resources, config):
 def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltResource):
     assets_map = {}
 
+    # Generate assets for all of the DLT sources. You can access them later for deps etc. via assets_map
     for config_class in DLT_SOURCES:
 
         @dlt.source(name=f'{client.id}_{config_class.name}')
@@ -92,6 +93,15 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
         
 
         assets_map[config_class.name] = assets_func
+
+    @dg.asset(deps=[
+        assets_map[OktaUsers.name]
+        ],
+        name=f'{client.id}-report')
+    def report():
+        print('it works!')
+
+    assets_map['report'] = report
 
     return dg.Definitions(
             assets=list(assets_map.values()),
