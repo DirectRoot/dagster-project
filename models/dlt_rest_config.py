@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import time
 
-# TODO: Handle Okta 429 responses
 # TODO: Get the IdP Discovery Policy as a way to check if data has been munged from two tenants?
 # TODO: Remove nested _links fields
 
@@ -231,6 +230,7 @@ class OktaDevices(DltRestConfig):
                 'resources': [
                     {
                         'name': 'devices',
+                        'primary_key': 'id',
                         'endpoint': {
                             'path': '/devices',
                             'incremental': self.incremental_params('search'),
@@ -240,17 +240,8 @@ class OktaDevices(DltRestConfig):
                         },
                     },
                     {
-                        'name': 'device',
-                        'endpoint': {
-                            'path': '/devices/{resources.devices.id}',
-                            'response_actions': [
-                                {'status_code': 429, 'action': self.pause_for_rate_limit}
-                            ]
-                        },
-                        'include_from_parent': ['id'],
-                    },
-                    {
                         'name': 'device_users',
+                        'merge_key': ['user__id', '_devices_id'],
                         'endpoint': {
                             'path': '/devices/{resources.devices.id}/users',
                             'response_actions': [
