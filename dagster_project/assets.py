@@ -29,15 +29,13 @@ DLT_SOURCES = [
     OktaGroups,
     OktaApps,
     OktaDevices,
-    #OktaAccessPolicies,
-    #OktaMfaEnrollmentPolicies,
-    #OktaPasswordPolicies,
-    #OktaProfileEnrollmentPolicies,
-    #OktaSignOnPolicies,
+    OktaAccessPolicies,
+    OktaMfaEnrollmentPolicies,
+    OktaPasswordPolicies,
+    OktaProfileEnrollmentPolicies,
+    OktaSignOnPolicies,
     #OktaLogEvents,
 ]
-
-dlt.config['normalize.data_writer.disable_compression'] = True # TODO: Only in local mode
 
 CLIENTS_DB = [
     Client({

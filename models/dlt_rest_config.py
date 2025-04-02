@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+# TODO: Handle Okta 429 responses
+# TODO: Get the IdP Discovery Policy as a way to check if data has been munged from two tenants?
+
 class DltRestConfig(ABC):
 
     def __init__(self, org_url, api_token):
@@ -222,11 +225,11 @@ class OktaSignOnPolicies(DltRestConfig):
                 'client': self._client,
                 'resource_defaults': {
                     'primary_key': self.primary_key,
-                    'write_disposition': self.write_disposition,
+                    'write_disposition': 'replace',
                 },
                 'resources': [
                     {
-                        'name': 'policies_sign_on',
+                        'name': 'sign_on_policies',
                         'endpoint': {
                             'path': '/policies',
                             'params': {
@@ -235,24 +238,18 @@ class OktaSignOnPolicies(DltRestConfig):
                         }
                     },
                     {
-                        'name': 'policy_sign_on',
+                        'name': 'sign_on_policy_mappings',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_sign_on.id}',
-                        }
-                    },
-                    {
-                        'name': 'policy_sign_on_mappings',
-                        'endpoint': {
-                            'path': '/policies/{resources.policies_sign_on.id}/mappings',
+                            'path': '/policies/{resources.sign_on_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
                             ],
                         }
                     },
                     {
-                        'name': 'policy_sign_on_rules',
+                        'name': 'sign_on_policy_rules',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_sign_on.id}/rules',
+                            'path': '/policies/{resources.sign_on_policies.id}/rules',
                         }
                     },
                 ],
@@ -269,11 +266,11 @@ class OktaPasswordPolicies(DltRestConfig):
                 'client': self._client,
                 'resource_defaults': {
                     'primary_key': self.primary_key,
-                    'write_disposition': self.write_disposition,
+                    'write_disposition': 'replace',
                 },
                 'resources': [
                     {
-                        'name': 'policies_password',
+                        'name': 'password_policies',
                         'endpoint': {
                             'path': '/policies',
                             'params': {
@@ -282,24 +279,18 @@ class OktaPasswordPolicies(DltRestConfig):
                         }
                     },
                     {
-                        'name': 'policy_password',
+                        'name': 'password_policy_mappings',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_password.id}',
-                        }
-                    },
-                    {
-                        'name': 'policy_password_mappings',
-                        'endpoint': {
-                            'path': '/policies/{resources.policies_password.id}/mappings',
+                            'path': '/policies/{resources.password_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
                             ],
                         }
                     },
                     {
-                        'name': 'policy_password_rules',
+                        'name': 'password_policy_rules',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_password.id}/rules',
+                            'path': '/policies/{resources.password_policies.id}/rules',
                         }
                     },
                 ],
@@ -316,11 +307,11 @@ class OktaMfaEnrollmentPolicies(DltRestConfig):
                 'client': self._client,
                 'resource_defaults': {
                     'primary_key': self.primary_key,
-                    'write_disposition': self.write_disposition,
+                    'write_disposition': 'replace',
                 },
                 'resources': [
                     {
-                        'name': 'policies_mfa_enrollment',
+                        'name': 'mfa_enrollment_policies',
                         'endpoint': {
                             'path': '/policies',
                             'params': {
@@ -329,24 +320,18 @@ class OktaMfaEnrollmentPolicies(DltRestConfig):
                         }
                     },
                     {
-                        'name': 'policy_mfa_enrollment',
+                        'name': 'mfa_enrollment_policy_mappings',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_mfa_enrollment.id}',
-                        }
-                    },
-                    {
-                        'name': 'policy_mfa_enrollment_mappings',
-                        'endpoint': {
-                            'path': '/policies/{resources.policies_mfa_enrollment.id}/mappings',
+                            'path': '/policies/{resources.mfa_enrollment_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
                             ],
                         }
                     },
                     {
-                        'name': 'policy_mfa_enrollment_rules',
+                        'name': 'mfa_enrollment_policy_rules',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_mfa_enrollment.id}/rules',
+                            'path': '/policies/{resources.mfa_enrollment_policies.id}/rules',
                         }
                     },
                 ],
@@ -363,11 +348,11 @@ class OktaProfileEnrollmentPolicies(DltRestConfig):
                 'client': self._client,
                 'resource_defaults': {
                     'primary_key': self.primary_key,
-                    'write_disposition': self.write_disposition,
+                    'write_disposition': 'replace',
                 },
                 'resources': [
                     {
-                        'name': 'policies_profile_enrollment',
+                        'name': 'profile_enrollment_policies',
                         'endpoint': {
                             'path': '/policies',
                             'params': {
@@ -376,24 +361,18 @@ class OktaProfileEnrollmentPolicies(DltRestConfig):
                         }
                     },
                     {
-                        'name': 'policy_profile_enrollment',
+                        'name': 'profile_enrollment_policy_mappings',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_profile_enrollment.id}',
-                        }
-                    },
-                    {
-                        'name': 'policy_profile_enrollment_mappings',
-                        'endpoint': {
-                            'path': '/policies/{resources.policies_profile_enrollment.id}/mappings',
+                            'path': '/policies/{resources.profile_enrollment_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
                             ],
                         }
                     },
                     {
-                        'name': 'policy_profile_enrollment_rules',
+                        'name': 'profile_enrollment_policy_rules',
                         'endpoint': {
-                            'path': '/policies/{resources.policies_profile_enrollment.id}/rules',
+                            'path': '/policies/{resources.profile_enrollment_policies.id}/rules',
                         }
                     },
                 ],
@@ -410,11 +389,11 @@ class OktaAccessPolicies(DltRestConfig):
             'client': self._client,
             'resource_defaults': {
                 'primary_key': self.primary_key,
-                'write_disposition': self.write_disposition,
+                'write_disposition': 'replace',
             },
             'resources': [
                 {
-                    'name': 'policies_access',
+                    'name': 'access_policies',
                     'endpoint': {
                         'path': '/policies',
                         'params': {
@@ -423,24 +402,18 @@ class OktaAccessPolicies(DltRestConfig):
                     }
                 },
                 {
-                    'name': 'policy_access',
+                    'name': 'access_policy_mappings',
                     'endpoint': {
-                        'path': '/policies/{resources.policies_access.id}',
-                    }
-                },
-                {
-                    'name': 'policy_access_mappings',
-                    'endpoint': {
-                        'path': '/policies/{resources.policies_access.id}/mappings',
+                        'path': '/policies/{resources.access_policies.id}/mappings',
                         'response_actions': [
                             {'status_code': 404, 'action': 'ignore'},
                         ],
                     }
                 },
                 {
-                    'name': 'policy_access_rules',
+                    'name': 'access_policy_rules',
                     'endpoint': {
-                        'path': '/policies/{resources.policies_access.id}/rules',
+                        'path': '/policies/{resources.access_policies.id}/rules',
                     }
                 },
             ],
@@ -461,6 +434,7 @@ class OktaLogEvents(DltRestConfig):
             'client': self._client,
             'resource_defaults': {
                     'primary_key': 'uuid',
+                    'write_disposition': 'append'
                 },
             'resources': [
                 {
@@ -476,7 +450,3 @@ class OktaLogEvents(DltRestConfig):
                 }
             ]
         }
-    
-if __name__ == '__main__':
-    l = OktaLogEvents(1, 1)
-    pass
