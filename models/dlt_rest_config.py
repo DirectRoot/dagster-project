@@ -17,27 +17,45 @@ class DltRestConfig(ABC):
                 }
     
     @property
+    def primary_key(self):
+        return 'id'
+
+    @property
+    def write_disposition(self):
+        return {
+            'disposition': 'merge'
+            }
+    
+    @property
     def _map_remove_links(self):
         def remove_links(data):
             if '_links' in data:
                 del data['_links']
             return data
         return remove_links
+    
+    @property
+    def _map_remove_credentials(self):
+        def remove_credentials (data):
+            if 'credentials' in data:
+                del data['credentials']
+            return data
+        return remove_credentials
 
     @property
     def data_maps(self):
         return [
-            self._map_remove_links
+            self._map_remove_links,
+            self._map_remove_credentials
         ]
 
     # TODO: Check this works & add it to sub classes
     def _gt_filter_expression(self, timestamp):
         return f'lastUpdated gt "{timestamp}"'
 
-    @property
-    def state_incremental_params(self):
+    def incremental_params(self, start_param='filter'):
         return {
-            'start_param': 'filter',
+            'start_param': start_param,
             'cursor_path': 'lastUpdated',
             'initial_value': '1970-01-01T00:00:00.000Z',
             'convert': lambda timestamp: self._gt_filter_expression(timestamp)
@@ -58,35 +76,19 @@ class OktaUsers(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'primary_key': 'id',
-                    'write_disposition': {
-                        'disposition': 'merge'
-                    }
+                    'primary_key': self.primary_key,
+                    'write_disposition': self.write_disposition
                 },
                 'resources': [
                     {
                         'name': 'users',
                         'endpoint': {
                             'path': 'users',
-                            'incremental': self.state_incremental_params
+                            'incremental': self.incremental_params()
                         },
                     }
                 ],
             }
-
-    @property
-    def _map_remove_credentials(self):
-        def remove_credentials (data):
-            if 'credentials' in data:
-                del data['credentials']
-            return data
-        return remove_credentials
-
-    @property
-    def data_maps(self):
-        maps = super().data_maps
-        maps.append(self._map_remove_credentials)
-        return maps
 
 
 
@@ -99,26 +101,27 @@ class OktaGroups(DltRestConfig):
         return  {
             'client': self._client,
             'resource_defaults': {
-                'primary_key': 'id',
-                'write_disposition': 'replace',
+                'primary_key': self.primary_key,
+                'write_disposition': self.write_disposition,
             },
             'resources': [
                 {
                     'name': 'groups',
                     'endpoint': {
-                        'path': '/groups'
-                    }
-                },
-                {
-                    'name': 'group',
-                    'endpoint': {
-                        'path': '/groups/{resources.groups.id}'
+                        'path': '/groups',
+                        'incremental': self.incremental_params(),
+                        'params': {
+                            'limit': 250
+                        }
                     }
                 },
                 {
                     'name': 'group_members',
                     'endpoint': {
-                        'path': '/groups/{resources.groups.id}/users'
+                        'path': '/groups/{resources.groups.id}/users',
+                        'params': {
+                            'limit': 1000
+                        }
                     },
                     'include_from_parent': ['id'],
                 },
@@ -149,24 +152,27 @@ class OktaApps(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'primary_key': 'id',
+                    'primary_key': self.primary_key,
                     'write_disposition': 'replace',
                 },
                 'resources': [
                     {
                         'name': 'apps',
                         'endpoint': {
-                            'path': '/apps'
+                            'path': '/apps',
+                            'params': {
+                                'limit': 200
+                            }
                         }
                     },
                     {
-                        'name': 'app',
-                        'endpoint': '/apps/{resources.apps.id}',
-                        'include_from_parent': ['id'],
-                    },
-                    {
                         'name': 'app_users',
-                        'endpoint': '/apps/{resources.apps.id}/users',
+                        'endpoint': {
+                            'path': '/apps/{resources.apps.id}/users',
+                            'params': {
+                                'limit': 500
+                            }
+                        },
                         'include_from_parent': ['id'],
                     },
                 ],
@@ -182,12 +188,15 @@ class OktaDevices(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'write_disposition': 'replace',
+                    'write_disposition': self.write_disposition,
                 },
                 'resources': [
                     {
                         'name': 'devices',
-                        'endpoint': '/devices',
+                        'endpoint': {
+                            'path': '/devices',
+                            'incremental': self.incremental_params('search')
+                        },
                     },
                     {
                         'name': 'device',
@@ -212,7 +221,8 @@ class OktaSignOnPolicies(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'write_disposition': 'replace',
+                    'primary_key': self.primary_key,
+                    'write_disposition': self.write_disposition,
                 },
                 'resources': [
                     {
@@ -258,7 +268,8 @@ class OktaPasswordPolicies(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'write_disposition': 'replace',
+                    'primary_key': self.primary_key,
+                    'write_disposition': self.write_disposition,
                 },
                 'resources': [
                     {
@@ -304,7 +315,8 @@ class OktaMfaEnrollmentPolicies(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'write_disposition': 'replace',
+                    'primary_key': self.primary_key,
+                    'write_disposition': self.write_disposition,
                 },
                 'resources': [
                     {
@@ -350,7 +362,8 @@ class OktaProfileEnrollmentPolicies(DltRestConfig):
         return {
                 'client': self._client,
                 'resource_defaults': {
-                    'write_disposition': 'replace',
+                    'primary_key': self.primary_key,
+                    'write_disposition': self.write_disposition,
                 },
                 'resources': [
                     {
@@ -396,7 +409,8 @@ class OktaAccessPolicies(DltRestConfig):
         return {
             'client': self._client,
             'resource_defaults': {
-                'write_disposition': 'replace',
+                'primary_key': self.primary_key,
+                'write_disposition': self.write_disposition,
             },
             'resources': [
                 {
