@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import time
 
 # TODO: Handle Okta 429 responses
 # TODO: Get the IdP Discovery Policy as a way to check if data has been munged from two tenants?
@@ -63,6 +64,18 @@ class DltRestConfig(ABC):
             'initial_value': '1970-01-01T00:00:00.000Z',
             'convert': lambda timestamp: self._gt_filter_expression(timestamp)
             }
+    
+    def pause_for_rate_limit(self, response):
+        # TODO: Use a proper logger
+        reset_at =int(response.headers['x-rate-limit-reset'])
+        now = int(time.time())
+        sleep_period = reset_at - now if reset_at - now > 0 else 0 # account for being close to the reset time & getting < 0
+        
+        print(f'Sleeping: {sleep_period}')
+        time.sleep(sleep_period)
+        print('Done sleeping')
+
+        return response
 
     @property
     @abstractmethod
@@ -87,7 +100,10 @@ class OktaUsers(DltRestConfig):
                         'name': 'users',
                         'endpoint': {
                             'path': 'users',
-                            'incremental': self.incremental_params()
+                            'incremental': self.incremental_params(),
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         },
                     }
                 ],
@@ -115,7 +131,10 @@ class OktaGroups(DltRestConfig):
                         'incremental': self.incremental_params(),
                         'params': {
                             'limit': 250
-                        }
+                        },
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     }
                 },
                 {
@@ -124,13 +143,21 @@ class OktaGroups(DltRestConfig):
                         'path': '/groups/{resources.groups.id}/users',
                         'params': {
                             'limit': 1000
-                        }
+                        },
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     },
                     'include_from_parent': ['id'],
                 },
                 {
                     'name': 'group_apps',
-                    'endpoint': '/groups/{resources.groups.id}/apps',
+                    'endpoint': {
+                        'path': '/groups/{resources.groups.id}/apps',
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
+                    },
                     'include_from_parent': ['id'],
                 },
                 {
@@ -139,6 +166,7 @@ class OktaGroups(DltRestConfig):
                         'path': '/groups/{resources.groups.id}/owners',
                         'response_actions': [
                             {'status_code': 401, 'action': 'ignore'},
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
                         ],
                     },
                     'include_from_parent': ['id'],
@@ -165,7 +193,10 @@ class OktaApps(DltRestConfig):
                             'path': '/apps',
                             'params': {
                                 'limit': 200
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
@@ -174,7 +205,10 @@ class OktaApps(DltRestConfig):
                             'path': '/apps/{resources.apps.id}/users',
                             'params': {
                                 'limit': 500
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         },
                         'include_from_parent': ['id'],
                     },
@@ -198,17 +232,30 @@ class OktaDevices(DltRestConfig):
                         'name': 'devices',
                         'endpoint': {
                             'path': '/devices',
-                            'incremental': self.incremental_params('search')
+                            'incremental': self.incremental_params('search'),
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         },
                     },
                     {
                         'name': 'device',
-                        'endpoint': '/devices/{resources.devices.id}',
+                        'endpoint': {
+                            'path': '/devices/{resources.devices.id}',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
+                        },
                         'include_from_parent': ['id'],
                     },
                     {
                         'name': 'device_users',
-                        'endpoint': '/devices/{resources.devices.id}/users',
+                        'endpoint': {
+                            'path': '/devices/{resources.devices.id}/users',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
+                        },
                         'include_from_parent': ['id'],
                     },
                 ],
@@ -234,7 +281,10 @@ class OktaSignOnPolicies(DltRestConfig):
                             'path': '/policies',
                             'params': {
                                 'type': 'OKTA_SIGN_ON'
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
@@ -243,6 +293,7 @@ class OktaSignOnPolicies(DltRestConfig):
                             'path': '/policies/{resources.sign_on_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
                             ],
                         }
                     },
@@ -250,6 +301,9 @@ class OktaSignOnPolicies(DltRestConfig):
                         'name': 'sign_on_policy_rules',
                         'endpoint': {
                             'path': '/policies/{resources.sign_on_policies.id}/rules',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                 ],
@@ -275,7 +329,10 @@ class OktaPasswordPolicies(DltRestConfig):
                             'path': '/policies',
                             'params': {
                                 'type': 'PASSWORD'
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
@@ -284,13 +341,17 @@ class OktaPasswordPolicies(DltRestConfig):
                             'path': '/policies/{resources.password_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
-                            ],
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
                         'name': 'password_policy_rules',
                         'endpoint': {
                             'path': '/policies/{resources.password_policies.id}/rules',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                 ],
@@ -316,7 +377,10 @@ class OktaMfaEnrollmentPolicies(DltRestConfig):
                             'path': '/policies',
                             'params': {
                                 'type': 'MFA_ENROLL'
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
@@ -325,13 +389,17 @@ class OktaMfaEnrollmentPolicies(DltRestConfig):
                             'path': '/policies/{resources.mfa_enrollment_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
-                            ],
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
                         'name': 'mfa_enrollment_policy_rules',
                         'endpoint': {
                             'path': '/policies/{resources.mfa_enrollment_policies.id}/rules',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                 ],
@@ -357,7 +425,10 @@ class OktaProfileEnrollmentPolicies(DltRestConfig):
                             'path': '/policies',
                             'params': {
                                 'type': 'PROFILE_ENROLLMENT'
-                            }
+                            },
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
@@ -366,13 +437,17 @@ class OktaProfileEnrollmentPolicies(DltRestConfig):
                             'path': '/policies/{resources.profile_enrollment_policies.id}/mappings',
                             'response_actions': [
                                 {'status_code': 404, 'action': 'ignore'},
-                            ],
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                     {
                         'name': 'profile_enrollment_policy_rules',
                         'endpoint': {
                             'path': '/policies/{resources.profile_enrollment_policies.id}/rules',
+                            'response_actions': [
+                                {'status_code': 429, 'action': self.pause_for_rate_limit}
+                            ]
                         }
                     },
                 ],
@@ -398,7 +473,10 @@ class OktaAccessPolicies(DltRestConfig):
                         'path': '/policies',
                         'params': {
                             'type': 'ACCESS_POLICY'
-                        }
+                        },
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     }
                 },
                 {
@@ -407,13 +485,17 @@ class OktaAccessPolicies(DltRestConfig):
                         'path': '/policies/{resources.access_policies.id}/mappings',
                         'response_actions': [
                             {'status_code': 404, 'action': 'ignore'},
-                        ],
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     }
                 },
                 {
                     'name': 'access_policy_rules',
                     'endpoint': {
                         'path': '/policies/{resources.access_policies.id}/rules',
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     }
                 },
             ],
@@ -445,7 +527,10 @@ class OktaLogEvents(DltRestConfig):
                         'params': {
                             'limit': 1000,
                             'until': '9999-01-01T00:00:00.000Z' # static until, to ensure a bounded query
-                        }
+                        },
+                        'response_actions': [
+                            {'status_code': 429, 'action': self.pause_for_rate_limit}
+                        ]
                     }
                 }
             ]
