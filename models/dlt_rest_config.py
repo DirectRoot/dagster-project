@@ -3,6 +3,8 @@ import time
 
 # TODO: Get the IdP Discovery Policy as a way to check if data has been munged from two tenants?
 # TODO: Remove nested _links fields
+# TODO: Check for merge key requirements, like with device users
+# TODO: Handle the weirdness in policy tables
 
 class DltRestConfig(ABC):
 
