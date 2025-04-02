@@ -425,11 +425,6 @@ class OktaLogEvents(DltRestConfig):
 
     @property
     def rest(self):
-        import datetime
-
-        today = datetime.date.today().strftime('%Y-%m-%dT%H:%M:%SZ')
-        tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
-        
         return {
             'client': self._client,
             'resource_defaults': {
@@ -441,10 +436,15 @@ class OktaLogEvents(DltRestConfig):
                     'name': 'log_events',
                     'endpoint': {
                         'path': '/logs',
+                        'incremental': {
+                            'start_param': 'since',
+                            'cursor_path': 'published',
+                            'initial_value': '1970-01-01T00:00:00.000Z',
+                            'convert': lambda timestamp: timestamp # suspect some weirdness where no 'convert' breaks the incremental??
+                        },
                         'params': {
-                            'since': today,
-                            'until': tomorrow,
                             'limit': 1000,
+                            'until': '9999-01-01T00:00:00.000Z' # static until, to ensure a bounded query
                         }
                     }
                 }

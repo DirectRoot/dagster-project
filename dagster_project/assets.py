@@ -34,7 +34,7 @@ DLT_SOURCES = [
     OktaPasswordPolicies,
     OktaProfileEnrollmentPolicies,
     OktaSignOnPolicies,
-    #OktaLogEvents,
+    OktaLogEvents,
 ]
 
 CLIENTS_DB = [
