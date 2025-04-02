@@ -3,6 +3,7 @@ import time
 
 # TODO: Handle Okta 429 responses
 # TODO: Get the IdP Discovery Policy as a way to check if data has been munged from two tenants?
+# TODO: Remove nested _links fields
 
 class DltRestConfig(ABC):
 
