@@ -9,6 +9,7 @@ from dlt.sources.rest_api import (
     RESTAPIConfig,
     rest_api_resources,
 )
+import pandas as pd
 
 from models.client import Client
 from models.dlt_rest_config import (
@@ -92,13 +93,28 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
         assets_map[config_class.name] = assets_func
 
     @dg.asset(deps=[
-        assets_map[OktaUsers.name]
+        assets_map[OktaLogEvents.name]
         ],
-        name=f'{client.id}-report')
-    def report():
-        print('it works!')
+        name=f'{client.id}-new-users')
+    def new_users():
+        import pandas as pd
 
-    assets_map['report'] = report
+        df = pd.read_sql(
+            con=f'postgresql://postgres:mysecretpassword@localhost:5433/{client.id}',
+            sql="""
+        select t.alternate_id, e.actor__display_name
+        from okta_logs.log_events as e
+        left join okta_logs.log_events__target as t
+        on e."_dlt_id"  = t._dlt_parent_id
+        where 
+        	e.event_type = 'user.lifecycle.activate'
+        	and e.published > now() - interval '72 hours';
+        """
+            )
+
+        df.to_csv(f'./data/{client.id}-new-users.csv', index=False)
+
+    assets_map['new_users'] = new_users
 
     return dg.Definitions(
             assets=list(assets_map.values()),
