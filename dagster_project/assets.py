@@ -1,3 +1,5 @@
+# TODO: Generate DBT's profiles.yml as an asset, with dynamic content based on the clients DB. This will allow for running models with the --profile flag and targetting the client's specific database
+
 from typing import Dict, List
 from os import environ
 
