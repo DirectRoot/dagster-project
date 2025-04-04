@@ -9,5 +9,5 @@ class Client():
         self.api_token = config['api_token']
 
     @property
-    def dagster_safe_prefix(self):
+    def dagster_safe_name(self):
         return self.name.replace('-', '_')

@@ -6,7 +6,14 @@ from pathlib import Path
 
 import dagster as dg
 from dagster import AssetExecutionContext
-from dagster_dbt import DagsterDbtTranslator, DagsterDbtTranslatorSettings, DbtProject, DbtCliResource, dbt_assets
+from dagster_dbt import (
+    DagsterDbtTranslator,
+    DagsterDbtTranslatorSettings,
+    DbtProject,
+    DbtCliResource,
+    dbt_assets,
+    get_asset_key_for_model
+)
 from dagster_dlt import DagsterDltResource, dlt_assets
 import dlt
 from dlt.sources.rest_api import (
@@ -112,8 +119,7 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
                 destination=dlt.destinations.postgres(f'postgresql://postgres:mysecretpassword@localhost:5433/{client.id}'),
                 dataset_name=config_class.name
             ),
-            name=f'{client.id}_{config_class.name}',
-            group_name=f'{client.dagster_safe_prefix}_okta'
+            name=f'{client.id}_{config_class.name}'
         )
         def dlt_assets_func(context: AssetExecutionContext, dlt: DagsterDltResource):
             yield from dlt.run(context=context)
@@ -121,41 +127,26 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
 
         dlt_assets_map[config_class.name] = dlt_assets_func
 
-    @dg.asset(deps=[
-        dlt_assets_map[OktaLogEvents.name]
-        ],
-        name=f'{client.id}-new-users')
-    def new_users():
-        import pandas as pd
-
-        df = pd.read_sql(
-            con=f'postgresql://postgres:mysecretpassword@localhost:5433/{client.id}',
-            sql="""
-        select t.alternate_id, e.actor__display_name
-        from okta_logs.log_events as e
-        left join okta_logs.log_events__target as t
-        on e."_dlt_id"  = t._dlt_parent_id
-        where 
-        	e.event_type = 'user.lifecycle.activate'
-        	and e.published > now() - interval '72 hours';
-        """
-            )
-
-        df.to_csv(f'./data/{client.id}-new-users.csv', index=False)
-
-    dlt_assets_map['new_users'] = new_users
-
     @dbt_assets(
         manifest=dbt_project.manifest_path,
         dagster_dbt_translator=ClientAwareDbtTranslator(
             settings=DagsterDbtTranslatorSettings(enable_duplicate_source_asset_keys=True),
             client=client),
-        name=f'{client.id}_dbt'
+        name=f'{client.id}_dbt',
     )
     def dbt_assets_func(context: dg.AssetExecutionContext, dbt: DbtCliResource):
         yield from dbt.cli(['run', '--profile', client.id], context=context).stream()
 
     dlt_assets_map['dbt_assets'] = dbt_assets_func
+
+    @dg.asset(deps=[
+        get_asset_key_for_model([dbt_assets_func], f'stg_new_user_events')
+        ],
+        name=f'{client.id}-new-users')
+    def new_users():
+        pass
+
+    dlt_assets_map['new_users'] = new_users
 
     return dg.Definitions(
             assets=list(dlt_assets_map.values()),
