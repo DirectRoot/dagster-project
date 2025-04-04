@@ -6,7 +6,7 @@ from pathlib import Path
 
 import dagster as dg
 from dagster import AssetExecutionContext
-from dagster_dbt import DagsterDbtTranslator, DbtProject, DbtCliResource, dbt_assets
+from dagster_dbt import DagsterDbtTranslator, DagsterDbtTranslatorSettings, DbtProject, DbtCliResource, dbt_assets
 from dagster_dlt import DagsterDltResource, dlt_assets
 import dlt
 from dlt.sources.rest_api import (
@@ -76,6 +76,8 @@ class ClientAwareDbtTranslator(DagsterDbtTranslator):
         
         if resource_type == 'model':
             return dg.AssetKey(f'{self._client.id}_{name}')
+        elif resource_type == 'source':
+            return dg.AssetKey(f'dlt_{self._client.id}_{OktaLogEvents.name}_log_events') # TODO: Figure out where & how to map dbt source names to dg asset keys
         else:
             return super().get_asset_key(dbt_resource_props)
 
@@ -145,7 +147,9 @@ def definitions_for_a_single_client(client: Client, dlt_resource: DagsterDltReso
 
     @dbt_assets(
         manifest=dbt_project.manifest_path,
-        dagster_dbt_translator=ClientAwareDbtTranslator(client=client),
+        dagster_dbt_translator=ClientAwareDbtTranslator(
+            settings=DagsterDbtTranslatorSettings(enable_duplicate_source_asset_keys=True),
+            client=client),
         name=f'{client.id}_dbt'
     )
     def dbt_assets_func(context: dg.AssetExecutionContext, dbt: DbtCliResource):
