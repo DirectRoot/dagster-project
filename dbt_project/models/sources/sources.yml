@@ -6,3 +6,6 @@ sources:
       - name: log_events
       - name: log_events__request__ip_chain
       - name: log_events__target
+  - name: okta_users
+    tables:
+      - name: users

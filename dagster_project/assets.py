@@ -53,6 +53,7 @@ DLT_SOURCES: DltRestConfig = [
 dbt_project = DbtProject(
     project_dir=Path(__file__).joinpath('..', '..', 'dbt_project').resolve()
 )
+dbt_project.prepare_if_dev()
 
 CLIENTS_DB = [
     Client({
