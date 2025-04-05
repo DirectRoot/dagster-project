@@ -78,6 +78,10 @@ class DltRestConfig(ABC):
         print('Done sleeping')
 
         return response
+    
+    @property
+    def resource_postfix_for_dbt_model_linking(self):
+        return f'{self.rest["resources"][0]["name"]}'
 
     @property
     @abstractmethod
